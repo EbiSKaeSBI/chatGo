@@ -1,0 +1,27 @@
+form  {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: solid black 1px;
+    padding: 50px;
+    max-width: 400px;
+    margin-top: 65vh;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.btn_section {
+    display: flex;
+    margin-top: 25px;
+    gap: 10px;
+}
+
+button {
+    padding: 15px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+input {
+    width: 100%;
+}

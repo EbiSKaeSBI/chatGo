@@ -3,8 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>chatGo</title>
+    <link rel="stylesheet" href="styles/style.css">
 </head>
 <body>
-<h1>Привет мир!</h1>
+<h1>ChatGo</h1>
+<div>
+    <h4 id="message_username"></h4>
+    <p id="text_message"></p>
+</div>
+<form method="get">
+    <label for="username">Введите ник</label>
+    <input type="text" name="username" id="username">
+    <label for="message">Введите сообщение</label>
+    <input type="text" name="message" id="message">
+    <div class="btn_section">
+        <button type="submit" id="connectWs">Подключение к серверу</button>
+        <button type="submit">Отправить сообщение</button>
+    </div>
+
+</form>
+<script>
+    const params = new URLSearchParams(window.location.search)
+    console.log(params.get("username"))
+    const username = params.get("username")
+    const inputValue = document.getElementById("username")
+    inputValue.value = params.get("username")
+
+    const connectWs = document.getElementById("connectWs")
+    try {
+        connectWs.addEventListener("click", () => {
+            new WebSocket(`ws://localhost:8080/ws?username=${username}`)
+            console.log("new websocket connection: ", username)
+        })
+    } catch (e) {
+        console.error("error: ", e)
+    }
+
+</script>
 </body>
 </html>
