@@ -17,24 +17,32 @@
     <label for="message">Введите сообщение</label>
     <input type="text" name="message" id="message">
     <div class="btn_section">
-        <button type="submit" id="connectWs">Подключение к серверу</button>
-        <button type="submit">Отправить сообщение</button>
+        <button type="button" id="connectWs">Подключение к серверу</button>
+        <button type="button" id="sendMessage">Отправить сообщение</button>
     </div>
 
 </form>
 <script>
-    const params = new URLSearchParams(window.location.search)
-    console.log(params.get("username"))
-    const username = params.get("username")
-    const inputValue = document.getElementById("username")
-    inputValue.value = params.get("username")
-
+    const inputValueUsername = document.getElementById("username")
+    const inputValueMessage = document.getElementById("message")
     const connectWs = document.getElementById("connectWs")
+    const sendMessage = document.getElementById("sendMessage")
+    let ws
+
     try {
         connectWs.addEventListener("click", () => {
-            new WebSocket(`ws://localhost:8080/ws?username=${username}`)
-            console.log("new websocket connection: ", username)
+            ws = new WebSocket(`ws://localhost:8080/ws?username=${inputValueUsername.value}`)
+            ws.onopen = (e) => console.log("Соединение : ", e.type)
+            ws.onerror = (e) => console.error("error: ", e)
+            ws.onclose = (e) => console.log("Соединение : ", e.type)
+            console.log("new websocket connection: ", inputValueUsername.value)
         })
+        sendMessage.addEventListener("click", () => {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(inputValueMessage.value)
+            }
+        })
+
     } catch (e) {
         console.error("error: ", e)
     }

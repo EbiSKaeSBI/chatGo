@@ -58,7 +58,7 @@ func main() {
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		defer func(conn *websocket.Conn) {
 			err := conn.Close()
@@ -67,7 +67,26 @@ func main() {
 			}
 		}(conn)
 		log.Println("websocket connected:", username)
-		conn.WriteMessage(1, []byte("ok"))
+
+		err = conn.WriteMessage(1, []byte("Welcome, "+username))
+		if err != nil {
+			log.Println(err)
+		}
+
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Ошибка чтения или клиент отключился: ", err)
+				break
+			}
+			log.Printf("recv: %s\n", string(message))
+
+			if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Println("Ошибка записи: ", err)
+				break
+			}
+		}
+
 	})
 
 	addr := ":8080"
