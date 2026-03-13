@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -9,12 +10,15 @@ import (
 type Client struct {
 	username string
 	conn     *websocket.Conn
-	send     chan []byte
+	send     chan Message
 	hub      *Hub
 }
 
 func (c *Client) SendGreeting() {
-	c.send <- []byte("Welcome, " + c.username)
+	c.send <- Message{
+		Type: "system",
+		Text: "Welcome, " + c.username,
+	}
 }
 
 func (c *Client) ReadPump() {
@@ -26,17 +30,24 @@ func (c *Client) ReadPump() {
 			break
 		}
 		log.Printf("recv: %s\n", string(message))
-		c.hub.Broadcast <- message
+		c.hub.Broadcast <- Message{Type: "message", Username: c.username, Text: string(message)}
 	}
 }
 
 func (c *Client) WritePump() {
 	for {
 		message, ok := <-c.send
+
 		if ok {
-			err := c.conn.WriteMessage(websocket.TextMessage, message)
+			data, err := json.Marshal(message)
 			if err != nil {
 				log.Println(err)
+				break
+			}
+			err = c.conn.WriteMessage(websocket.TextMessage, data)
+			if err != nil {
+				log.Println(err)
+				c.hub.Unregister <- c
 				break
 			}
 		} else {
@@ -48,6 +59,6 @@ func (c *Client) WritePump() {
 }
 
 func NewClient(username string, conn *websocket.Conn, hub *Hub) *Client {
-	send := make(chan []byte, 16)
+	send := make(chan Message, 16)
 	return &Client{username, conn, send, hub}
 }

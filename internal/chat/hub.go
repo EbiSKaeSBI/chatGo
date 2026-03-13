@@ -4,7 +4,7 @@ type Hub struct {
 	clients    map[*Client]bool
 	Register   chan *Client
 	Unregister chan *Client
-	Broadcast  chan []byte
+	Broadcast  chan Message
 }
 
 func (h *Hub) Run() {
@@ -30,7 +30,7 @@ func NewHub() *Hub {
 	clients := make(map[*Client]bool)
 	register := make(chan *Client)
 	unregister := make(chan *Client)
-	broadcast := make(chan []byte)
+	broadcast := make(chan Message)
 
 	return &Hub{clients: clients, Broadcast: broadcast, Register: register, Unregister: unregister}
 }

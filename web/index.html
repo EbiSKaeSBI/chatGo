@@ -7,10 +7,7 @@
 </head>
 <body>
 <h1>ChatGo</h1>
-<div>
-    <h4 id="message_username"></h4>
-    <p id="text_message"></p>
-</div>
+<div id="chat"></div>
 <form method="get">
     <label for="username">Введите ник</label>
     <input type="text" name="username" id="username">
@@ -27,26 +24,74 @@
     const inputValueMessage = document.getElementById("message")
     const connectWs = document.getElementById("connectWs")
     const sendMessage = document.getElementById("sendMessage")
-    let ws
+    const chat = document.getElementById("chat")
 
-    try {
-        connectWs.addEventListener("click", () => {
-            ws = new WebSocket(`ws://localhost:8080/ws?username=${inputValueUsername.value}`)
-            ws.onopen = (e) => console.log("Соединение : ", e.type)
-            ws.onerror = (e) => console.error("error: ", e)
-            ws.onclose = (e) => console.log("Соединение : ", e.type)
-            console.log("new websocket connection: ", inputValueUsername.value)
-        })
-        sendMessage.addEventListener("click", () => {
-            if (ws.readyState === ws.OPEN) {
-                ws.send(inputValueMessage.value)
-            }
-        })
+    let ws = null
 
-    } catch (e) {
-        console.error("error: ", e)
+    function appendMessage(message) {
+        const item = document.createElement("div")
+
+        if (message.type === "system") {
+            item.textContent = message.text
+            item.style.color = "gray"
+        } else {
+            item.textContent = `${message.username}: ${message.text}`
+        }
+
+        chat.appendChild(item)
+        chat.scrollTop = chat.scrollHeight
     }
 
+    connectWs.addEventListener("click", () => {
+        const username = inputValueUsername.value.trim()
+
+        if (!username) {
+            console.log("Введите ник")
+            return
+        }
+
+        ws = new WebSocket(`ws://localhost:8080/ws?username=${encodeURIComponent(username)}`)
+
+        ws.onopen = (event) => {
+            console.log("Соединение:", event.type)
+        }
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data)
+            appendMessage(message)
+        }
+
+        ws.onerror = (event) => {
+            console.error("error:", event)
+        }
+
+        ws.onclose = (event) => {
+            console.log("Соединение:", event.type)
+        }
+    })
+
+    sendMessage.addEventListener("click", () => {
+        const text = inputValueMessage.value.trim()
+
+        if (!ws) {
+            console.log("Сначала подключись к серверу")
+            return
+        }
+
+        if (ws.readyState !== WebSocket.OPEN) {
+            console.log("Соединение не открыто")
+            return
+        }
+
+        if (!text) {
+            console.log("Введите сообщение")
+            return
+        }
+
+        ws.send(text)
+        inputValueMessage.value = ""
+    })
 </script>
+
 </body>
 </html>
