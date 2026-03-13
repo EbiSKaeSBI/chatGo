@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/EbiSKaeSBI/chatGo/internal/chat"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,6 +20,8 @@ func main() {
 			return true
 		},
 	}
+	hub := chat.NewHub()
+	go hub.Run()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -56,36 +59,20 @@ func main() {
 			http.Error(w, "Missing username", http.StatusBadRequest)
 			return
 		}
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(err)
+			return
 		}
-		defer func(conn *websocket.Conn) {
-			err := conn.Close()
-			if err != nil {
-
-			}
-		}(conn)
+		defer conn.Close()
 		log.Println("websocket connected:", username)
 
-		err = conn.WriteMessage(1, []byte("Welcome, "+username))
-		if err != nil {
-			log.Println(err)
-		}
-
-		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Println("Ошибка чтения или клиент отключился: ", err)
-				break
-			}
-			log.Printf("recv: %s\n", string(message))
-
-			if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Println("Ошибка записи: ", err)
-				break
-			}
-		}
+		client := chat.NewClient(username, conn, hub)
+		hub.Register <- client
+		client.SendGreeting()
+		go client.WritePump()
+		client.ReadPump()
 
 	})
 
