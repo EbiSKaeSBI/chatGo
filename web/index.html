@@ -1,97 +1,291 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>chatGo</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGo Messenger</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        .app {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.95;
+        }
+
+        .primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .secondary {
+            background: #111827;
+            color: white;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        #chat {
+            margin-top: 20px;
+            height: 420px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fafafa;
+            padding: 14px;
+        }
+
+        .message {
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+
+        .message.system {
+            background: #f3f4f6;
+            color: #4b5563;
+            font-style: italic;
+        }
+
+        .message-header {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .message-text {
+            font-size: 15px;
+            word-break: break-word;
+        }
+
+        .hint {
+            margin-top: 12px;
+            color: #666;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
-<h1>ChatGo</h1>
-<div id="chat"></div>
-<form method="get">
-    <label for="username">Введите ник</label>
-    <input type="text" name="username" id="username">
-    <label for="message">Введите сообщение</label>
-    <input type="text" name="message" id="message">
-    <div class="btn_section">
-        <button type="button" id="connectWs">Подключение к серверу</button>
-        <button type="button" id="sendMessage">Отправить сообщение</button>
+<div class="app">
+    <div class="card">
+        <h1>ChatGo Messenger</h1>
+
+        <div class="grid grid-2">
+            <div>
+                <label for="username">Ваш ник</label>
+                <input type="text" id="username" placeholder="например, alice">
+            </div>
+
+            <div>
+                <label for="to">Кому</label>
+                <input type="text" id="to" placeholder="например, bob">
+            </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+            <label for="message">Сообщение</label>
+            <input type="text" id="message" placeholder="Введите сообщение">
+        </div>
+
+        <div class="actions">
+            <button type="button" class="primary" id="connectWs">Подключиться</button>
+            <button type="button" class="secondary" id="sendMessage">Отправить</button>
+        </div>
+
+        <div class="status" id="status">Статус: не подключен</div>
+        <div class="hint">Формат лички: укажи ник получателя и текст сообщения.</div>
+
+        <div id="chat"></div>
     </div>
+</div>
 
-</form>
 <script>
-    const inputValueUsername = document.getElementById("username")
-    const inputValueMessage = document.getElementById("message")
-    const connectWs = document.getElementById("connectWs")
-    const sendMessage = document.getElementById("sendMessage")
-    const chat = document.getElementById("chat")
+    const usernameInput = document.getElementById("username");
+    const toInput = document.getElementById("to");
+    const messageInput = document.getElementById("message");
+    const connectButton = document.getElementById("connectWs");
+    const sendButton = document.getElementById("sendMessage");
+    const chat = document.getElementById("chat");
+    const statusText = document.getElementById("status");
 
-    let ws = null
+    let ws = null;
 
-    function appendMessage(message) {
-        const item = document.createElement("div")
-
-        if (message.type === "system") {
-            item.textContent = message.text
-            item.style.color = "gray"
-        } else {
-            item.textContent = `${message.username}: ${message.text}`
-        }
-
-        chat.appendChild(item)
-        chat.scrollTop = chat.scrollHeight
+    function setStatus(text) {
+        statusText.textContent = "Статус: " + text;
     }
 
-    connectWs.addEventListener("click", () => {
-        const username = inputValueUsername.value.trim()
+    function appendMessage(message) {
+        const item = document.createElement("div");
+        item.className = "message";
+
+        if (message.type === "system") {
+            item.classList.add("system");
+            item.textContent = message.text;
+        } else {
+            const header = document.createElement("div");
+            header.className = "message-header";
+            header.textContent = `${message.from} → ${message.to}`;
+
+            const text = document.createElement("div");
+            text.className = "message-text";
+            text.textContent = message.text;
+
+            item.appendChild(header);
+            item.appendChild(text);
+        }
+
+        chat.appendChild(item);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    connectButton.addEventListener("click", () => {
+        const username = usernameInput.value.trim();
 
         if (!username) {
-            console.log("Введите ник")
-            return
+            alert("Введите ник");
+            return;
         }
 
-        ws = new WebSocket(`ws://localhost:8080/ws?username=${encodeURIComponent(username)}`)
-
-        ws.onopen = (event) => {
-            console.log("Соединение:", event.type)
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            alert("Соединение уже открыто");
+            return;
         }
+
+        ws = new WebSocket(`ws://localhost:8080/ws?username=${encodeURIComponent(username)}`);
+
+        ws.onopen = () => {
+            setStatus("подключен");
+            console.log("WebSocket connected");
+        };
 
         ws.onmessage = (event) => {
-            const message = JSON.parse(event.data)
-            appendMessage(message)
-        }
+            try {
+                const message = JSON.parse(event.data);
+                appendMessage(message);
+            } catch (error) {
+                console.error("Ошибка парсинга JSON:", error);
+                console.log("Raw message:", event.data);
+            }
+        };
 
         ws.onerror = (event) => {
-            console.error("error:", event)
-        }
+            setStatus("ошибка");
+            console.error("WebSocket error:", event);
+        };
 
-        ws.onclose = (event) => {
-            console.log("Соединение:", event.type)
-        }
-    })
+        ws.onclose = () => {
+            setStatus("отключен");
+            console.log("WebSocket closed");
+        };
+    });
 
-    sendMessage.addEventListener("click", () => {
-        const text = inputValueMessage.value.trim()
+    sendButton.addEventListener("click", () => {
+        const to = toInput.value.trim();
+        const text = messageInput.value.trim();
 
         if (!ws) {
-            console.log("Сначала подключись к серверу")
-            return
+            alert("Сначала подключись к серверу");
+            return;
         }
 
         if (ws.readyState !== WebSocket.OPEN) {
-            console.log("Соединение не открыто")
-            return
+            alert("Соединение не открыто");
+            return;
+        }
+
+        if (!to) {
+            alert("Укажи получателя");
+            return;
         }
 
         if (!text) {
-            console.log("Введите сообщение")
-            return
+            alert("Введите сообщение");
+            return;
         }
 
-        ws.send(text)
-        inputValueMessage.value = ""
-    })
-</script>
+        const payload = {
+            to: to,
+            text: text
+        };
 
+        ws.send(JSON.stringify(payload));
+        messageInput.value = "";
+        messageInput.focus();
+    });
+
+    messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            sendButton.click();
+        }
+    });
+</script>
 </body>
 </html>

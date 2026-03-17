@@ -23,14 +23,20 @@ func (c *Client) SendGreeting() {
 
 func (c *Client) ReadPump() {
 	for {
+		var incoming struct {
+			To   string `json:"to"`
+			Text string `json:"text"`
+		}
 		_, message, err := c.conn.ReadMessage()
+		err = json.Unmarshal(message, &incoming)
+
 		if err != nil {
 			log.Println("Ошибка чтения или клиент отключился: ", err)
 			c.hub.Unregister <- c
 			break
 		}
-		log.Printf("recv: %s\n", string(message))
-		c.hub.Broadcast <- Message{Type: "message", Username: c.username, Text: string(message)}
+		log.Printf("recv: to=%s  text=%s\n", incoming.To, incoming.Text)
+		c.hub.Broadcast <- Message{Type: "message", From: c.username, To: incoming.To, Text: incoming.Text}
 	}
 }
 
