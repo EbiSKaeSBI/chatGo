@@ -143,6 +143,10 @@
                 <label for="username">Ваш ник</label>
                 <input type="text" id="username" placeholder="например, alice">
             </div>
+            <div>
+                <label for="password">Ваш пароль</label>
+                <input type="password" id="password" placeholder="123456">
+            </div>
 
             <div>
                 <label for="to">Кому</label>
@@ -169,6 +173,7 @@
 
 <script>
     const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
     const toInput = document.getElementById("to");
     const messageInput = document.getElementById("message");
     const connectButton = document.getElementById("connectWs");
@@ -208,9 +213,14 @@
 
     connectButton.addEventListener("click", () => {
         const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
 
         if (!username) {
             alert("Введите ник");
+            return;
+        }
+        if (!password) {
+            alert("Введите пароль")
             return;
         }
 
@@ -219,7 +229,7 @@
             return;
         }
 
-        ws = new WebSocket(`ws://localhost:8080/ws?username=${encodeURIComponent(username)}`);
+        ws = new WebSocket(`ws://localhost:8080/ws?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
 
         ws.onopen = () => {
             setStatus("подключен");
