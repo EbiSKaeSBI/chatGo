@@ -1,7 +1,7 @@
 package repository
 
 func (r *Repository) SaveMessage(userId int, text string) error {
-	_, err := r.db.Exec("INSERT INTO messages (user_id, text) values ($1, $2)", userId, text)
+	_, err := r.db.Exec("INSERT INTO messages (sender_id, text) values ($1, $2)", userId, text)
 	if err != nil {
 		return err
 	}

@@ -15,13 +15,11 @@ import (
 func main() {
 
 	mux := http.NewServeMux()
-	connStr := "user=postgres password=1234 dbname=chatGo host=localhost port=5432"
-	db, err := sql.Open("postgres", connStr)
+	cfg := config.Load()
+	db, err := sql.Open("postgres", cfg.DSN)
 	repo := repository.NewRepository(db)
 	log.Println(db.Ping())
 	defer db.Close()
-
-	cfg := config.Load()
 
 	fileServer := http.FileServer(http.Dir("./web/styles"))
 	mux.Handle("/styles/", http.StripPrefix("/styles", fileServer))
@@ -37,7 +35,7 @@ func main() {
 	mux.HandleFunc("/ws", h.WebSocket)
 
 	log.Println("Listening on", cfg.Port)
-	err = http.ListenAndServe(cfg.Port, mux)
+	err = http.ListenAndServe(":"+cfg.Port, mux)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,9 +12,7 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +26,7 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		err := h.repo.CreateUser(username, password)
 		userId, _ = h.repo.FindUser(username)
 		if err != nil {
-			return
+			log.Println(err)
 		}
 	}
 	if r.Method != "GET" {
